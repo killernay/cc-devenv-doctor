@@ -14,8 +14,10 @@ $script:results = @()
 
 function Test-Cmd($name) { return [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 
-function Report($step, $ok, $note = "") {
+# Report <step> <ok> [note] [hint shown only on failure]
+function Report($step, $ok, $note = "", $failHint = "") {
   $mark = if ($ok) { "OK" } else { "FAIL" }
+  if (-not $ok -and $failHint) { $note = "$note $failHint".Trim() }
   $script:results += "$mark|$step|$note"
   Write-Host "[$mark] $step $note"
 }
@@ -105,7 +107,7 @@ if (Test-Cmd "code") {
 } else {
   winget install --id Microsoft.VisualStudioCode -e --source winget --accept-source-agreements --accept-package-agreements
   Refresh-Path
-  Report "VS Code" (Test-Cmd "code") "If 'code' still isn't found, close and reopen PowerShell then re-run this script"
+  Report "VS Code" (Test-Cmd "code") "" "If 'code' still isn't found, close and reopen PowerShell then re-run this script"
 }
 
 # --- VS Code extensions ---
@@ -141,7 +143,7 @@ if ($wantClaude) {
       }
       Refresh-Path
     }
-    Report "Claude Code CLI" (Test-Cmd "claude") "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
+    Report "Claude Code CLI" (Test-Cmd "claude") "" "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
   }
 }
 
@@ -152,7 +154,7 @@ if ($wantCodex) {
   } else {
     irm https://chatgpt.com/codex/install.ps1 | iex
     Refresh-Path
-    Report "Codex CLI" (Test-Cmd "codex") "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
+    Report "Codex CLI" (Test-Cmd "codex") "" "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
   }
 }
 

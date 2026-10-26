@@ -1,79 +1,171 @@
 # cc-devenv-doctor
 
-One command to take a bare Windows or Mac machine to a working [Claude Code](https://claude.com/claude-code) or [Codex](https://developers.openai.com/codex/cli) setup — plus a plugin that keeps diagnosing it afterwards, from inside either agent.
+Get a Mac or Windows computer ready for **Claude Code** or **Codex** (AI coding assistants) by pasting one command — plus a built-in checkup that tells you what's still missing.
 
 > ภาษาไทย: [README.th.md](./README.th.md)
 
-## Why this exists
+No computer experience needed. Follow the steps below one at a time.
 
-This started at an **AI Agentic Engineering for IT** exam.
+---
 
-The material was not the hard part. Getting everyone's machine ready was. Installing git, then Node, then VS Code, then Docker, then the Claude Code CLI — one command at a time, across Windows and Mac at once, with PATH not refreshing, with installers that stop to ask a question nobody in the room knows how to answer. Hours went into that. Hours that were supposed to go into the actual subject.
+## Before you start
 
-The frustrating part is that none of it was interesting. It was the same handful of commands every time, in the same order, failing in the same few ways. That is exactly the kind of problem worth solving once and giving away, so nobody else has to spend their morning on it.
+- **A computer:** Mac (macOS 13 or newer) or Windows 10 / 11, with at least 4 GB of RAM
+- **Internet** — several programs get downloaded, some of them large (Docker especially), so this can take a while
+- **Your computer's login password** — the Mac asks for it during setup; Windows shows a pop-up asking you to click "Yes"
+- **An account** for at least one AI assistant:
 
-So: one script per OS, and a plugin that can tell you what's still broken afterwards.
+| Assistant | Account you need |
+|---|---|
+| Claude Code | A paid Claude plan (Pro, Max, Team or Enterprise) — **the free Claude plan does not work** |
+| Codex | Any ChatGPT plan, including the free one (the free plan has lower limits) |
 
-## What it installs
+Not sure which? Install both — that's what the script does by default.
 
-- **Git**
-- **Node.js** (LTS on Windows, Homebrew's `node` on macOS)
-- **Claude Code CLI** and/or **Codex CLI** — your choice, both via their official native installers
-- **[devenv-doctor](./devenv-doctor)** — the plugin bundled in this repo, installed into whichever agent you picked. It runs the real checks, then tells you exactly what to fix
-- **Docker Desktop**, including WSL2 setup on Windows if it's missing
-- **VS Code** + extensions: [Claude Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) and/or [Codex](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt), plus [Container Tools](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-containers) for Docker
-- **[mattpocock-skills](https://github.com/mattpocock/skills)** — grilling, TDD, code review and more; from Anthropic's official marketplace for Claude Code, from Matt's own marketplace for Codex
+---
 
-## The last two are examples, not the point
+## Install on a Mac
 
-The VS Code extensions and mattpocock-skills are here as **examples of what a ready machine looks like** — not as a claim that these are the right choices for you. The real point of the script is that once the base is working, adding the next skill or extension is a one-liner instead of an afternoon. They're in the list to show the shape of that, and to give someone brand new something that already works on day one.
+### Step 1 — Open the Terminal app
 
-Swap them for whatever you actually use. That's the intended way to fork this.
+Press **⌘ Command + Space** together. A search box appears. Type `Terminal` and press **Enter**.
 
-### On VS Code specifically
+A window with text appears — this is where you type commands.
 
-Straight answer: **I haven't opened VS Code since October 2025.** Not once.
+### Step 2 — Copy this command, paste it, press Enter
 
-It's in the script anyway, and I think that's the right call — if you're new, an editor that already has the agent's extension in it is the shortest path to something that works, and a much friendlier landing spot than a bare terminal.
-
-But don't read its presence here as a recommendation from someone who uses it daily. If you already have an editor you like, delete that block from the script. Nothing else depends on it.
-
-## Quick start
-
-### If you have git
-
-**Windows (PowerShell):**
-```powershell
-git clone https://github.com/killernay/cc-devenv-doctor.git
-cd cc-devenv-doctor
-powershell -ExecutionPolicy Bypass -File setup.ps1
-```
-
-**macOS:**
 ```bash
-git clone https://github.com/killernay/cc-devenv-doctor.git
-cd cc-devenv-doctor
-bash setup.sh
+cd ~ && curl -fsSL -o cc.zip https://github.com/killernay/cc-devenv-doctor/archive/refs/heads/main.zip && unzip -oq cc.zip && rm cc.zip && cd cc-devenv-doctor-main && bash setup.sh
 ```
 
-### If you don't have git yet
+To paste in Terminal: press **⌘ Command + V**, then **Enter**.
 
-1. Go to [github.com/killernay/cc-devenv-doctor](https://github.com/killernay/cc-devenv-doctor), click **Code → Download ZIP**, and extract it
-2. Open a terminal / PowerShell inside the extracted folder — GitHub names it **`cc-devenv-doctor-main`**, not `cc-devenv-doctor`
-3. Run the same script as above — `bash setup.sh` (macOS) or `powershell -ExecutionPolicy Bypass -File setup.ps1` (Windows). The script installs git for you along the way.
+### Step 3 — Answer the questions
 
-The script is idempotent — safe to run more than once. It skips anything already installed and reports a pass/fail summary at the end. Anything that fails prints the exact command to retry it.
+- **"Which coding agent…"** — just press **Enter** (= install both Claude Code and Codex)
+- **"Where should the Claude Code plugins be enabled?"** — just press **Enter**
+- **"Password:"** — type your computer's login password and press **Enter**.
+  **Nothing shows on screen while you type — no letters, no dots. That's normal.** Type it fully and press Enter.
+- **"Press RETURN…"** — press **Enter**
 
-### Two questions the script asks you
+Wait until you see **`=== Summary ===`**, then go to [Step 4](#step-4--read-the-result).
 
-1. **Which agent** — Claude Code, Codex, or both (press Enter for both). Everything agent-specific — CLI, VS Code extension, plugins — follows this answer.
-2. **Where the Claude Code plugins should be enabled** (only asked if Claude Code is included):
-   - **user** (recommended) — writes `~/.claude/settings.json`, so the plugins work in every project on this machine
-   - **project** — writes `.claude/settings.json` into the folder you ran the script from, so the plugins only load while you're inside *that folder*
+---
 
-   Just press Enter to get `user`. Pick `project` only if you deliberately want the plugins scoped to one project — and note that if you ran the script from your downloads folder, `project` means "only in the downloads folder", which is almost certainly not what you want. Codex has no such choice: its plugins are always per user.
+## Install on Windows
 
-To skip both prompts, set the answers up front (`AGENTS` is `claude`, `codex` or `both`):
+### Step 1 — Open PowerShell
+
+Press the **Windows** key, type `PowerShell`, press **Enter**.
+(You don't need "Run as administrator".)
+
+### Step 2 — Copy this command, paste it, press Enter
+
+```powershell
+cd ~; Invoke-WebRequest https://github.com/killernay/cc-devenv-doctor/archive/refs/heads/main.zip -OutFile cc.zip; Expand-Archive cc.zip -DestinationPath . -Force; Remove-Item cc.zip; cd cc-devenv-doctor-main; powershell -ExecutionPolicy Bypass -File setup.ps1
+```
+
+To paste in PowerShell: **right-click** inside the window (or press **Ctrl + V**), then **Enter**.
+
+### Step 3 — Answer the questions
+
+- **"Which coding agent…"** — just press **Enter** (= install both Claude Code and Codex)
+- **"Where should the Claude Code plugins be enabled?"** — just press **Enter**
+- A pop-up asks **"Do you want to allow this app to make changes to your device?"** — click **Yes**
+- If the script says you **must restart** (it installed WSL2 for Docker) — restart, then do Steps 1–2 again. The script skips whatever is already installed.
+
+Wait until you see **`=== Summary ===`**.
+
+---
+
+## Step 4 — Read the result
+
+At the end the script prints a list:
+
+- **`[v]`** = installed fine
+- **`[!]`** = not done yet; the text after it says what to do
+
+A `[!]` is nothing to worry about. Most of them go away if you **close the window, open a new one, and paste the Step 2 command again** — the script can be run as many times as you like and skips whatever already worked.
+
+The first time, Docker almost always shows `[!]` — open the **Docker Desktop** app once and wait 1–2 minutes until it's ready.
+
+## Step 5 — Log in
+
+**Close the Terminal / PowerShell window and open a new one first.** (Important — the old window can't see the programs that were just installed.)
+
+Then type one of these and press Enter:
+
+| Assistant | Type | What happens |
+|---|---|---|
+| Claude Code | `claude` | Your browser opens the Claude login page. Log in, then come back to the window. |
+| Codex | `codex` | Choose **Sign in with ChatGPT** and log in in your browser. |
+
+If it asks anything else (a colour theme, whether you trust this folder), press **Enter** to accept what's already selected.
+
+To quit: press **Ctrl + C** twice.
+
+## Step 6 — Let it check your computer
+
+Once logged in, inside `claude` or `codex`, type:
+
+| Assistant | Type |
+|---|---|
+| Claude Code | `/devenv-doctor:environment-doctor` |
+| Codex | `$environment-doctor` |
+
+Or just type `check my setup`. It checks everything and shows a ✅ / ❌ table. Anything missing comes with the exact command to paste for your computer.
+
+In Codex it sometimes asks permission to run a check — allow it. Every check only reads information; none of them change anything.
+
+All ✅ — **you're ready** 🎉
+
+---
+
+## Something went wrong
+
+| What you see | What to do |
+|---|---|
+| `command not found: claude` or `'claude' is not recognized` (or `codex`) | Close the window and open a new one. Still failing? Paste the Step 2 command again. |
+| Nothing appears when typing your password | Normal. Type it fully and press Enter. |
+| Docker shows `[!]` | Open the Docker Desktop app once and wait 1–2 minutes. |
+| Windows asks you to restart | Restart, then paste the Step 2 command again. |
+| Windows says `winget not found` | Update Windows, or install **App Installer** from the Microsoft Store, then paste the command again. |
+| Claude says you don't have access after logging in | The free Claude plan can't use Claude Code — you need Pro or higher. Or use Codex instead. |
+| `/devenv-doctor:environment-doctor` does nothing | Quit (Ctrl + C twice) and start it again. |
+| Mac: `VS Code` shows `[!]` | Open VS Code once, press ⌘ Command + Shift + P, type `Shell Command: Install 'code' command in PATH`, press Enter, then paste the command again. |
+
+Still stuck? [Open an issue](https://github.com/killernay/cc-devenv-doctor/issues) and paste the `=== Summary ===` part.
+
+### Don't delete the `cc-devenv-doctor-main` folder
+
+The script puts it in your user folder (Mac: `/Users/yourname/cc-devenv-doctor-main`, Windows: `C:\Users\yourname\cc-devenv-doctor-main`). Claude Code reads the checkup straight from that folder — delete it and the checkup disappears from Claude Code.
+
+### Getting a newer version
+
+Paste the Step 2 command again. It downloads the latest version over the old one.
+
+---
+
+## For people comfortable with computers
+
+### What it installs
+
+- **Homebrew** (Mac), **Git**, **Node.js** (LTS on Windows, Homebrew's `node` on macOS)
+- **Claude Code CLI** and/or **Codex CLI** — via their official native installers
+- **[devenv-doctor](./devenv-doctor)** — the checkup plugin in this repo, installed into whichever agent you picked
+- **Docker Desktop**, including WSL2 on Windows if it's missing
+- **VS Code** + extensions: [Claude Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) / [Codex](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt) and [Container Tools](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-containers)
+- **[mattpocock-skills](https://github.com/mattpocock/skills)** — grilling, TDD, code review and more
+- On macOS: adds `~/.local/bin` to `~/.zprofile` (or `~/.bash_profile`) once, because the Claude Code installer doesn't
+
+The VS Code extensions and mattpocock-skills are **examples** of what a ready machine looks like, not recommendations. Swap them for whatever you actually use — that's the intended way to fork this. (On VS Code: I haven't opened it since October 2025, but for a beginner an editor with the agent's extension already in it is a friendlier landing spot than a bare terminal. If you have an editor you like, delete that block from the script; nothing else depends on it.)
+
+### Skip the questions with variables
+
+| Variable | Values | Effect |
+|---|---|---|
+| `AGENTS` | `claude` / `codex` / `both` | Which agent(s) to set up (default `both`) |
+| `PLUGIN_SCOPE` | `user` / `project` / `local` | Where Claude Code plugins work (default `user`) |
 
 ```bash
 AGENTS=both PLUGIN_SCOPE=user bash setup.sh
@@ -82,97 +174,33 @@ AGENTS=both PLUGIN_SCOPE=user bash setup.sh
 $env:AGENTS="both"; $env:PLUGIN_SCOPE="user"; powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-### Just want the devenv-doctor plugin, not the full bootstrap?
+`user` writes `~/.claude/settings.json`, so plugins work in every project. `project` writes `.claude/settings.json` into the folder you ran the script from, so plugins only load inside that folder — run from a downloads folder, that means "only in the downloads folder", which is almost never what you want. Codex has no such setting; its plugins are always per user.
 
-Already have the agent **and git**? No clone, no ZIP, no `cd` — the marketplace commands do the clone for you.
+### Using git clone instead of the ZIP
 
-**Claude Code** (2.1.275 or later — one command):
+```bash
+git clone https://github.com/killernay/cc-devenv-doctor.git
+cd cc-devenv-doctor
+bash setup.sh                                          # macOS
+powershell -ExecutionPolicy Bypass -File setup.ps1     # Windows
+```
+
+### Just the devenv-doctor plugin
+
+Already have the agent **and git**? No clone needed — the marketplace commands do it.
 
 ```
+# Claude Code (2.1.275 or later)
 claude plugin install devenv-doctor --marketplace killernay/cc-devenv-doctor
-```
 
-Then open `claude` and run `/devenv-doctor:environment-doctor`. It installs to **user** scope, so it works in every project on this machine. If a Claude Code session was already open while you installed, run `/reload-plugins` first.
-
-**Codex:**
-
-```
+# Codex
 codex plugin marketplace add killernay/cc-devenv-doctor
 codex plugin add devenv-doctor@ngernthongdee
 ```
 
-Then start a new `codex` session and type `$environment-doctor`, or just ask "check my setup". Codex reads this repo's Claude-format marketplace as-is — there is no separate Codex manifest to keep in sync.
+If a session was already open: `/reload-plugins` in Claude Code; start a new session in Codex. Without git you get *"Failed to clone marketplace repository"* — use the setup script instead; it installs git.
 
-Both commands shell out to `git clone`, so git has to be installed — without it you get *"Failed to clone marketplace repository"*. No git yet? Run the setup script above instead; it installs git along the way.
-
-### Removing it again
-
-```
-claude plugin uninstall devenv-doctor@ngernthongdee
-claude plugin marketplace remove ngernthongdee
-```
-```
-codex plugin remove devenv-doctor@ngernthongdee
-codex plugin marketplace remove ngernthongdee
-```
-
-Uninstall takes the full `name@marketplace` id — that's what `claude plugin list` / `codex plugin list` show. Removing the marketplace is the second, separate step; without it the marketplace stays registered with nothing installed from it.
-
-#### ภาษาไทย
-
-มี Claude Code หรือ Codex **กับ git** อยู่แล้ว อยากได้แค่ปลั๊กอิน ไม่ต้อง clone เอง ไม่ต้องโหลด ZIP ไม่ต้อง `cd` ไปไหน:
-
-```
-claude plugin install devenv-doctor --marketplace killernay/cc-devenv-doctor
-```
-
-แล้วเปิด `claude` พิมพ์ `/devenv-doctor:environment-doctor` จบ (ต้องเป็น Claude Code 2.1.275 ขึ้นไป) — ติดตั้งเป็น scope **user** คือใช้ได้ทุกโปรเจกต์บนเครื่องนี้ ถ้ามีเซสชันเปิดค้างอยู่ตอนติดตั้ง ให้ `/reload-plugins` ก่อน
-
-ฝั่ง Codex:
-
-```
-codex plugin marketplace add killernay/cc-devenv-doctor
-codex plugin add devenv-doctor@ngernthongdee
-```
-
-แล้วเปิดเซสชัน `codex` ใหม่ พิมพ์ `$environment-doctor` หรือพิมพ์ว่า "check my setup" เฉย ๆ ก็ได้
-
-ทั้งสองฝั่งเรียก `git clone` ข้างใน เครื่องต้องมี git ไม่งั้นขึ้น *"Failed to clone marketplace repository"* — ถ้ายังไม่มี git ให้รันสคริปต์ setup ด้านบนแทน มันลง git ให้ด้วย
-
-ถอนออก:
-
-```
-claude plugin uninstall devenv-doctor@ngernthongdee
-claude plugin marketplace remove ngernthongdee
-```
-```
-codex plugin remove devenv-doctor@ngernthongdee
-codex plugin marketplace remove ngernthongdee
-```
-
-ต้องใส่ id เต็ม `name@marketplace` ตามที่ `claude plugin list` / `codex plugin list` แสดง และต้องลบ marketplace เป็นอีกขั้นแยกต่างหาก ไม่งั้น marketplace จะยังค้างอยู่ทั้งที่ไม่มีปลั๊กอินเหลือแล้ว
-
-## Installing by hand (no script)
-
-### Before you start
-
-**An account** for at least one agent:
-
-| Agent | Account |
-|---|---|
-| Claude Code | Claude Pro, Max, Team, Enterprise, or Console (API). **The free Claude plan does not include Claude Code.** |
-| Codex | Any ChatGPT plan, Free and Go included (with lower limits), or an OpenAI API key |
-
-**A machine** that meets:
-
-| | Minimum |
-|---|---|
-| macOS | 13 (Docker Desktop needs 14) |
-| Windows | 10 version 1809; WSL2 if you want Docker |
-| RAM | 4 GB |
-| Other | Internet access; admin rights only for Docker and WSL2 |
-
-### Install in this order
+### Installing by hand (no script)
 
 Order matters: git before any plugin (marketplaces are cloned with git), Node before claude-mem.
 
@@ -183,48 +211,48 @@ Order matters: git before any plugin (marketplaces are cloned with git), Node be
 | 3 | Node.js ≥ 20 | `brew install node` | `winget install --id OpenJS.NodeJS.LTS -e` |
 | 4a | Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash` | `irm https://claude.ai/install.ps1 \| iex` |
 | 4b | Codex | `curl -fsSL https://chatgpt.com/codex/install.sh \| sh` | `irm https://chatgpt.com/codex/install.ps1 \| iex` |
-| 5 | Docker Desktop | `brew install --cask docker-desktop` | `wsl --install --no-distribution`, restart, then `winget install --id Docker.DockerDesktop -e` |
+| 5 | Docker Desktop (macOS 14+) | `brew install --cask docker-desktop` | `wsl --install --no-distribution`, restart, then `winget install --id Docker.DockerDesktop -e` |
 | 6 | VS Code (optional) | `brew install --cask visual-studio-code` | `winget install --id Microsoft.VisualStudioCode -e` |
 
-Install 4a, 4b, or both.
+- **macOS:** the Claude Code installer leaves `~/.local/bin` off your PATH: `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile`
+- **Windows:** install Git before Claude Code — Claude Code uses Git Bash as its shell and falls back to PowerShell without it.
+- Open a new terminal after each install, and open the Docker app once so the engine starts.
 
-- **macOS:** the Claude Code installer leaves `~/.local/bin` off your PATH. Add it once: `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile`
-- **Windows:** install Git before Claude Code — Claude Code uses Git Bash as its shell, and falls back to PowerShell without it.
-- **Everywhere:** open a new terminal after each install. A `command not found` right after installing is almost always a PATH that hasn't refreshed yet.
-- **Docker:** open the Docker app once so the engine starts.
+Then: log in (`claude` / `codex`) → [install devenv-doctor](#just-the-devenv-doctor-plugin) → extras:
 
-### Then
+- VS Code extensions: `code --install-extension anthropic.claude-code` / `openai.chatgpt` / `ms-azuretools.vscode-containers`
+- mattpocock-skills: Claude Code `claude plugin marketplace add anthropics/claude-plugins-official` then `claude plugin install mattpocock-skills@claude-plugins-official`; Codex `codex plugin marketplace add mattpocock/skills` then `codex plugin add mattpocock-skills@mattpocock`
+- Check: `claude doctor` / `codex doctor --summary`, then run devenv-doctor inside the agent
 
-1. Log in: run `claude` and/or `codex` — each opens your browser.
-2. Install devenv-doctor: see [Just want the devenv-doctor plugin](#just-want-the-devenv-doctor-plugin-not-the-full-bootstrap).
-3. Optional extras:
-   - VS Code extensions: `code --install-extension anthropic.claude-code` / `openai.chatgpt` / `ms-azuretools.vscode-containers`
-   - claude-mem: `npx claude-mem install` — needs Node ≥ 20 and, for Claude Code, 2.1.139 or later; installs Bun and uv itself
-   - mattpocock-skills: Claude Code `claude plugin install mattpocock-skills@claude-plugins-official` (run `claude plugin marketplace add anthropics/claude-plugins-official` first if it says the marketplace isn't found); Codex `codex plugin marketplace add mattpocock/skills` then `codex plugin add mattpocock-skills@mattpocock`
-4. Check: `claude doctor` / `codex doctor --summary` for the agents, then run devenv-doctor inside the agent for the whole machine.
+### Memory across sessions (claude-mem, optional)
 
-## What still needs a human
+```
+npx claude-mem install
+```
 
-Three things genuinely can't be scripted, because they need you personally to prove who you are or to answer a question:
+Run it after logging in. It detects Claude Code and Codex and installs Bun and uv itself. Needs Node ≥ 20 and, for Claude Code, 2.1.139 or later. The memory provider it pre-selects (CMEM Pro) **becomes paid after a 30-day trial** — pick another one in the prompt if you don't want that.
 
-1. **Logging in** — run `claude` and/or `codex` after the script finishes; each opens your browser for you to sign in
-2. **`npx claude-mem install`** (optional) — gives your agent memory that persists across sessions. It detects Claude Code and Codex, installs its own runtime (Bun, uv), and asks which memory provider to use. The pre-selected one (CMEM Pro) becomes paid after a 30-day trial — pick another in the prompt if you don't want that. Same category as the extensions above: an example of what you can bolt on once the base works
-3. **A restart**, if the script had to install WSL2 on Windows for you (Docker Desktop needs it) — the script tells you clearly if this applies
+### Removing it
 
-On macOS the Claude Code installer puts `claude` in `~/.local/bin` but doesn't add that folder to your shell profile, so a new terminal would still say *command not found*. The script adds it to `~/.zprofile` (or `~/.bash_profile` for bash) once, so you don't have to.
+```
+claude plugin uninstall devenv-doctor@ngernthongdee
+claude plugin marketplace remove ngernthongdee
+```
+```
+codex plugin remove devenv-doctor@ngernthongdee
+codex plugin marketplace remove ngernthongdee
+```
 
-## devenv-doctor
+Use the full `name@marketplace` id that `claude plugin list` / `codex plugin list` shows, and remove the marketplace as a separate step.
 
-Once installed, run it from inside your agent — or just describe the problem ("my setup is broken", "why isn't docker working"), which fires the same skill:
+### What devenv-doctor checks
 
-- **Claude Code:** `/devenv-doctor:environment-doctor`. Every check is read-only and pre-approved, so it won't interrupt you with permission prompts. No response? The session was open before the plugin was installed — run `/reload-plugins`, or start a new session.
-- **Codex:** `$environment-doctor`. Codex's sandbox can block a few checks (the Docker socket, for one); the skill knows to treat that as the sandbox rather than a broken machine, and asks to rerun that check with permission instead of reporting a false failure.
+git, Node, the Claude Code and Codex CLIs including whether you're logged in (`claude doctor`, `codex doctor`), VS Code extensions, Docker (installed and engine running), claude-mem, installed plugins — then exact fix commands for your OS.
 
-It runs the real checks — git, Node, the Claude Code and Codex CLIs including whether you're logged in (`claude doctor`, `codex doctor`), VS Code extensions, Docker, claude-mem, installed plugins — and gives you exact fix commands for whatever's missing, for your OS.
+- **Claude Code:** every check is read-only and pre-approved, so there are no permission prompts.
+- **Codex:** Codex's sandbox can block a few checks (the Docker socket, for one). The skill treats that as the sandbox rather than a broken machine, and asks to rerun the check with permission instead of reporting a false failure.
 
-### What it looks like
-
-On a machine where the setup script has already run, the report comes back like this:
+Example on a machine where the script has run:
 
 | Check | Status | Detail |
 |---|---|---|
@@ -240,13 +268,21 @@ On a machine where the setup script has already run, the report comes back like 
 | openai.chatgpt | ✅ | |
 | ms-azuretools.vscode-containers | ✅ | |
 
-Anything that isn't ✅ comes back with the exact command to fix it, for your OS.
+It also knows the failures that look like success: a session started before the plugin was installed, a Claude Code plugin in the wrong scope, a plugin whose marketplace was never added, and `codex plugin install` (the Codex subcommand is `add`).
 
-It also knows the failures that look like success: a session started before the plugin was installed, a Claude Code plugin installed into the wrong scope, a plugin whose marketplace was never added, and `codex plugin install` (the Codex subcommand is `add`).
+---
 
-## Why not just `npm install -g @anthropic-ai/claude-code` (or `@openai/codex`)?
+## Why this exists
 
-That installs the agent itself and leaves you to install git, Node, VS Code and Docker separately, and to work out the plugin syntax on your own — which is exactly where the morning goes.
+This started at an **AI Agentic Engineering for IT** exam.
+
+The material was not the hard part. Getting everyone's machine ready was. Installing git, then Node, then VS Code, then Docker, then the Claude Code CLI — one command at a time, across Windows and Mac at once, with PATH not refreshing, with installers that stop to ask a question nobody in the room knows how to answer. Hours went into that. Hours that were supposed to go into the actual subject.
+
+The frustrating part is that none of it was interesting. It was the same handful of commands every time, in the same order, failing in the same few ways. That is exactly the kind of problem worth solving once and giving away, so nobody else has to spend their morning on it.
+
+So: one script per OS, and a plugin that can tell you what's still broken afterwards.
+
+Why not just `npm install -g @anthropic-ai/claude-code` (or `@openai/codex`)? That installs the agent itself and leaves you to install git, Node, VS Code and Docker separately, and to work out the plugin syntax on your own — which is exactly where the morning goes.
 
 ## Development
 
@@ -268,8 +304,6 @@ And check Codex still sees the plugin, without touching your own Codex config:
 ```bash
 CODEX_HOME=$(mktemp -d) sh -c 'codex plugin marketplace add "$PWD" && codex plugin list -m ngernthongdee'
 ```
-
-## Contributing
 
 Issues and PRs welcome — especially anything that removes a step a beginner currently has to do by hand.
 

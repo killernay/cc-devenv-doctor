@@ -18,12 +18,13 @@ set -uo pipefail
 
 RESULTS=()
 has() { command -v "$1" >/dev/null 2>&1; }
+# report <step> <ok 1|0> [note] [hint shown only on failure]
 report() {
   local step="$1" ok="$2" note="${3:-}" line
   if [ "$ok" = "1" ]; then
     line="[v] $step $note"
   else
-    line="[!] $step $note"
+    line="[!] $step $note ${4:-}"
   fi
   RESULTS+=("$line")
   echo "$line"
@@ -139,7 +140,7 @@ if has code; then
   report "VS Code" 1
 else
   brew install --cask visual-studio-code
-  report "VS Code" "$(has code && echo 1 || echo 0)" "if 'code' still isn't found: open VS Code once, then Cmd+Shift+P > 'Shell Command: Install code command in PATH'"
+  report "VS Code" "$(has code && echo 1 || echo 0)" "" "if 'code' still isn't found: open VS Code once, then Cmd+Shift+P > 'Shell Command: Install code command in PATH'"
 fi
 
 # --- VS Code extensions ---
@@ -163,7 +164,7 @@ if [ "$WANT_CLAUDE" = "1" ]; then
     report "Claude Code CLI" 1
   else
     curl -fsSL https://claude.ai/install.sh | bash
-    report "Claude Code CLI" "$(has claude && echo 1 || echo 0)" "if still not found, open a new terminal and re-run this script"
+    report "Claude Code CLI" "$(has claude && echo 1 || echo 0)" "" "if still not found, open a new terminal and re-run this script"
   fi
 fi
 
@@ -173,7 +174,7 @@ if [ "$WANT_CODEX" = "1" ]; then
     report "Codex CLI" 1
   else
     curl -fsSL https://chatgpt.com/codex/install.sh | sh
-    report "Codex CLI" "$(has codex && echo 1 || echo 0)" "if still not found, open a new terminal and re-run this script"
+    report "Codex CLI" "$(has codex && echo 1 || echo 0)" "" "if still not found, open a new terminal and re-run this script"
   fi
 fi
 
