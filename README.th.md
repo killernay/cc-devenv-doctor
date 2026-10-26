@@ -118,6 +118,57 @@ codex plugin marketplace remove ngernthongdee
 
 ต้องใส่ id เต็ม `name@marketplace` ตามที่ `claude plugin list` / `codex plugin list` แสดง และการลบ marketplace เป็นอีกขั้นแยกต่างหาก ไม่งั้น marketplace จะยังค้างอยู่ทั้งที่ไม่มีปลั๊กอินเหลือแล้ว
 
+## ลงเองทีละขั้น (ไม่ใช้สคริปต์)
+
+### ต้องมีก่อน
+
+**บัญชี** ของเอเจนต์อย่างน้อยหนึ่งตัว:
+
+| เอเจนต์ | บัญชี |
+|---|---|
+| Claude Code | Claude Pro, Max, Team, Enterprise หรือ Console (API) — **แผนฟรีของ Claude ใช้ Claude Code ไม่ได้** |
+| Codex | ChatGPT ได้ทุกแผน รวม Free และ Go (โควตาน้อยกว่า) หรือใช้ OpenAI API key |
+
+**เครื่อง**:
+
+| | ขั้นต่ำ |
+|---|---|
+| macOS | 13 (Docker Desktop ต้อง 14) |
+| Windows | 10 เวอร์ชัน 1809 ต้องมี WSL2 ถ้าจะใช้ Docker |
+| RAM | 4 GB |
+| อื่น ๆ | ต่ออินเทอร์เน็ต สิทธิ์ admin ใช้แค่ตอนลง Docker กับ WSL2 |
+
+### ลงตามลำดับนี้
+
+ลำดับมีผล: git ต้องมาก่อนปลั๊กอินทุกตัว (marketplace ถูก clone ด้วย git) Node ต้องมาก่อน claude-mem
+
+| # | ของ | macOS | Windows (PowerShell) |
+|---|---|---|---|
+| 1 | Homebrew (เฉพาะ Mac) | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | — |
+| 2 | Git | `brew install git` | `winget install --id Git.Git -e` |
+| 3 | Node.js ≥ 20 | `brew install node` | `winget install --id OpenJS.NodeJS.LTS -e` |
+| 4a | Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash` | `irm https://claude.ai/install.ps1 \| iex` |
+| 4b | Codex | `curl -fsSL https://chatgpt.com/codex/install.sh \| sh` | `irm https://chatgpt.com/codex/install.ps1 \| iex` |
+| 5 | Docker Desktop | `brew install --cask docker-desktop` | `wsl --install --no-distribution` รีสตาร์ท แล้ว `winget install --id Docker.DockerDesktop -e` |
+| 6 | VS Code (ไม่บังคับ) | `brew install --cask visual-studio-code` | `winget install --id Microsoft.VisualStudioCode -e` |
+
+ลง 4a หรือ 4b หรือทั้งคู่ก็ได้
+
+- **macOS:** ตัวติดตั้ง Claude Code ไม่เพิ่ม `~/.local/bin` เข้า PATH ให้ ต้องเพิ่มเองครั้งเดียว: `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile`
+- **Windows:** ลง Git ก่อน Claude Code — Claude Code ใช้ Git Bash เป็น shell ถ้าไม่มีจะใช้ PowerShell แทน
+- **ทุก OS:** ลงอะไรเสร็จให้เปิด terminal ใหม่ ขึ้น `command not found` หลังลงเสร็จเกือบทุกครั้งคือ PATH ยังไม่รีเฟรช
+- **Docker:** ต้องเปิดแอป Docker หนึ่งครั้งให้ engine เริ่มทำงาน
+
+### จากนั้น
+
+1. ล็อกอิน: รัน `claude` และ/หรือ `codex` — แต่ละตัวเปิดเบราว์เซอร์ให้
+2. ลง devenv-doctor: ดู[เอาแค่ปลั๊กอิน devenv-doctor](#เอาแค่ปลั๊กอิน-devenv-doctor-ไม่เอา-bootstrap-ทั้งชุด)
+3. ของเสริม (ไม่บังคับ):
+   - VS Code extensions: `code --install-extension anthropic.claude-code` / `openai.chatgpt` / `ms-azuretools.vscode-containers`
+   - claude-mem: `npx claude-mem install` — ต้องมี Node ≥ 20 และถ้าใช้กับ Claude Code ต้อง 2.1.139 ขึ้นไป มันลง Bun กับ uv ให้เอง
+   - mattpocock-skills: Claude Code `claude plugin install mattpocock-skills@claude-plugins-official` (ถ้าขึ้นว่าหา marketplace ไม่เจอ ให้รัน `claude plugin marketplace add anthropics/claude-plugins-official` ก่อน); Codex `codex plugin marketplace add mattpocock/skills` แล้ว `codex plugin add mattpocock-skills@mattpocock`
+4. เช็ค: `claude doctor` / `codex doctor --summary` สำหรับตัวเอเจนต์ แล้วเรียก devenv-doctor ในเอเจนต์เพื่อเช็คทั้งเครื่อง
+
 ## อะไรที่ยังต้องใช้คนทำ
 
 สามอย่างที่เขียนสคริปต์แทนไม่ได้จริง ๆ เพราะต้องให้คุณยืนยันตัวตนเองหรือตอบคำถามเอง:
