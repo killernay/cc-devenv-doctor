@@ -152,6 +152,57 @@ codex plugin marketplace remove ngernthongdee
 
 ต้องใส่ id เต็ม `name@marketplace` ตามที่ `claude plugin list` / `codex plugin list` แสดง และต้องลบ marketplace เป็นอีกขั้นแยกต่างหาก ไม่งั้น marketplace จะยังค้างอยู่ทั้งที่ไม่มีปลั๊กอินเหลือแล้ว
 
+## Installing by hand (no script)
+
+### Before you start
+
+**An account** for at least one agent:
+
+| Agent | Account |
+|---|---|
+| Claude Code | Claude Pro, Max, Team, Enterprise, or Console (API). **The free Claude plan does not include Claude Code.** |
+| Codex | Any ChatGPT plan, Free and Go included (with lower limits), or an OpenAI API key |
+
+**A machine** that meets:
+
+| | Minimum |
+|---|---|
+| macOS | 13 (Docker Desktop needs 14) |
+| Windows | 10 version 1809; WSL2 if you want Docker |
+| RAM | 4 GB |
+| Other | Internet access; admin rights only for Docker and WSL2 |
+
+### Install in this order
+
+Order matters: git before any plugin (marketplaces are cloned with git), Node before claude-mem.
+
+| # | What | macOS | Windows (PowerShell) |
+|---|---|---|---|
+| 1 | Homebrew (Mac only) | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` | — |
+| 2 | Git | `brew install git` | `winget install --id Git.Git -e` |
+| 3 | Node.js ≥ 20 | `brew install node` | `winget install --id OpenJS.NodeJS.LTS -e` |
+| 4a | Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash` | `irm https://claude.ai/install.ps1 \| iex` |
+| 4b | Codex | `curl -fsSL https://chatgpt.com/codex/install.sh \| sh` | `irm https://chatgpt.com/codex/install.ps1 \| iex` |
+| 5 | Docker Desktop | `brew install --cask docker-desktop` | `wsl --install --no-distribution`, restart, then `winget install --id Docker.DockerDesktop -e` |
+| 6 | VS Code (optional) | `brew install --cask visual-studio-code` | `winget install --id Microsoft.VisualStudioCode -e` |
+
+Install 4a, 4b, or both.
+
+- **macOS:** the Claude Code installer leaves `~/.local/bin` off your PATH. Add it once: `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile`
+- **Windows:** install Git before Claude Code — Claude Code uses Git Bash as its shell, and falls back to PowerShell without it.
+- **Everywhere:** open a new terminal after each install. A `command not found` right after installing is almost always a PATH that hasn't refreshed yet.
+- **Docker:** open the Docker app once so the engine starts.
+
+### Then
+
+1. Log in: run `claude` and/or `codex` — each opens your browser.
+2. Install devenv-doctor: see [Just want the devenv-doctor plugin](#just-want-the-devenv-doctor-plugin-not-the-full-bootstrap).
+3. Optional extras:
+   - VS Code extensions: `code --install-extension anthropic.claude-code` / `openai.chatgpt` / `ms-azuretools.vscode-containers`
+   - claude-mem: `npx claude-mem install` — needs Node ≥ 20 and, for Claude Code, 2.1.139 or later; installs Bun and uv itself
+   - mattpocock-skills: Claude Code `claude plugin install mattpocock-skills@claude-plugins-official` (run `claude plugin marketplace add anthropics/claude-plugins-official` first if it says the marketplace isn't found); Codex `codex plugin marketplace add mattpocock/skills` then `codex plugin add mattpocock-skills@mattpocock`
+4. Check: `claude doctor` / `codex doctor --summary` for the agents, then run devenv-doctor inside the agent for the whole machine.
+
 ## What still needs a human
 
 Three things genuinely can't be scripted, because they need you personally to prove who you are or to answer a question:
