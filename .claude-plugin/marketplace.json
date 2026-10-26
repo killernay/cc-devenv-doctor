@@ -4,13 +4,13 @@
     "name": "Ngernthongdee Co., Ltd.",
     "url": "https://github.com/killernay/cc-devenv-doctor"
   },
-  "description": "Ngernthongdee's Claude Code plugins — starting with devenv-doctor, a dev environment health check that tells you exactly what's broken and how to fix it.",
+  "description": "Ngernthongdee's plugins for Claude Code and Codex — starting with devenv-doctor, a dev environment health check that tells you exactly what's broken and how to fix it.",
   "plugins": [
     {
       "name": "devenv-doctor",
       "source": "./devenv-doctor",
-      "description": "Self-diagnoses your dev environment (git, Node.js, VS Code, Docker, claude-mem) and suggests exact fix commands",
-      "version": "0.2.0",
+      "description": "Self-diagnoses your dev environment (git, Node.js, Claude Code, Codex, VS Code, Docker, claude-mem) and suggests exact fix commands",
+      "version": "0.3.0",
       "author": {
         "name": "Ngernthongdee Co., Ltd."
       },
@@ -24,7 +24,8 @@
         "setup",
         "onboarding",
         "docker",
-        "nodejs"
+        "nodejs",
+        "codex"
       ]
     }
   ]
