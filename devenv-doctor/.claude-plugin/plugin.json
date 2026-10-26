@@ -1,7 +1,7 @@
 {
   "name": "devenv-doctor",
-  "version": "0.2.0",
-  "description": "Environment doctor for Claude Code — checks git/Node.js/VS Code/Docker/claude-mem health and suggests exact fix commands per OS",
+  "version": "0.3.0",
+  "description": "Environment doctor for Claude Code and Codex — checks git/Node.js/agent CLIs and login/VS Code/Docker/claude-mem health and suggests exact fix commands per OS",
   "author": {
     "name": "Ngernthongdee Co., Ltd."
   },
@@ -12,6 +12,7 @@
     "environment",
     "diagnostics",
     "setup",
-    "onboarding"
+    "onboarding",
+    "codex"
   ]
 }

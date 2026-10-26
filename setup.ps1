@@ -1,10 +1,11 @@
 # ===================================================================
 # cc-devenv-doctor — Windows setup
 # Usage: powershell -ExecutionPolicy Bypass -File setup.ps1
-#        $env:PLUGIN_SCOPE="user"; ... -File setup.ps1   # skip the scope prompt
+#        $env:AGENTS="both"; $env:PLUGIN_SCOPE="user"; ... -File setup.ps1   # skip both prompts
+#        AGENTS = claude | codex | both
 # Safe to re-run (idempotent) — skips anything already installed.
 #
-# NOTE: native commands (winget, claude, code) do NOT raise terminating
+# NOTE: native commands (winget, claude, codex, code) do NOT raise terminating
 # errors, so try/catch never fires for them. Always test $LASTEXITCODE.
 # ===================================================================
 
@@ -25,27 +26,51 @@ function Refresh-Path {
 
 Write-Host "=== cc-devenv-doctor — Windows setup ===`n"
 
-# --- Plugin scope — your choice, because it decides where plugins work ---
+# --- Which coding agent(s) to set up ---
+$agents = $env:AGENTS
+if (-not $agents) {
+  $agents = "both"
+  if (-not [Console]::IsInputRedirected) {
+    Write-Host "Which coding agent should this machine be ready for?"
+    Write-Host "  1) both Claude Code and Codex   [recommended]"
+    Write-Host "  2) Claude Code only"
+    Write-Host "  3) Codex only"
+    $agentChoice = Read-Host "Choose 1, 2 or 3 [1]"
+    if ($agentChoice -eq "2") { $agents = "claude" } elseif ($agentChoice -eq "3") { $agents = "codex" }
+  }
+}
+if ($agents -notin @("claude", "codex", "both")) {
+  Write-Host "Unknown AGENTS '$agents' — using 'both' instead"
+  $agents = "both"
+}
+$wantClaude = $agents -ne "codex"
+$wantCodex = $agents -ne "claude"
+Write-Host "Agents: $agents`n"
+
+# --- Claude Code plugin scope — your choice, because it decides where plugins work ---
 # 'project' writes .claude\settings.json into the CURRENT folder, so the
 # plugins only load while you're inside it. For a bootstrap run that folder
 # is usually this download, which is not where you'll actually be working.
+# (Codex has no plugin scope — its plugins are always enabled per user.)
 $pluginScope = $env:PLUGIN_SCOPE
-if (-not $pluginScope) {
-  if (-not [Console]::IsInputRedirected) {
-    Write-Host "Where should the Claude Code plugins be enabled?"
-    Write-Host "  1) user    - every project on this machine (~\.claude\settings.json)   [recommended]"
-    Write-Host "  2) project - only this folder ($PWD\.claude\settings.json)"
-    $scopeChoice = Read-Host "Choose 1 or 2 [1]"
-    if ($scopeChoice -eq "2") { $pluginScope = "project" } else { $pluginScope = "user" }
-  } else {
+if ($wantClaude) {
+  if (-not $pluginScope) {
+    if (-not [Console]::IsInputRedirected) {
+      Write-Host "Where should the Claude Code plugins be enabled?"
+      Write-Host "  1) user    - every project on this machine (~\.claude\settings.json)   [recommended]"
+      Write-Host "  2) project - only this folder ($PWD\.claude\settings.json)"
+      $scopeChoice = Read-Host "Choose 1 or 2 [1]"
+      if ($scopeChoice -eq "2") { $pluginScope = "project" } else { $pluginScope = "user" }
+    } else {
+      $pluginScope = "user"
+    }
+  }
+  if ($pluginScope -notin @("user", "project", "local")) {
+    Write-Host "Unknown PLUGIN_SCOPE '$pluginScope' — using 'user' instead"
     $pluginScope = "user"
   }
+  Write-Host "Claude Code plugin scope: $pluginScope`n"
 }
-if ($pluginScope -notin @("user", "project", "local")) {
-  Write-Host "Unknown PLUGIN_SCOPE '$pluginScope' — using 'user' instead"
-  $pluginScope = "user"
-}
-Write-Host "Plugin scope: $pluginScope`n"
 
 # --- winget ---
 if (-not (Test-Cmd "winget")) {
@@ -56,7 +81,7 @@ if (-not (Test-Cmd "winget")) {
   Report "winget" $true
 }
 
-# --- Git ---
+# --- Git (Claude Code uses Git Bash for its Bash tool) ---
 if (Test-Cmd "git") {
   Report "Git" $true
 } else {
@@ -74,19 +99,6 @@ if (Test-Cmd "node") {
   Report "Node.js" (Test-Cmd "node")
 }
 
-# --- Bun (claude-mem's hooks and worker run on it — `npx claude-mem install`
-# does NOT install it, it just fails later with "Bun runtime not found") ---
-$bunExe = "$env:USERPROFILE\.bun\bin\bun.exe"
-if ((Test-Cmd "bun") -or (Test-Path $bunExe)) {
-  Report "Bun" $true
-} else {
-  irm https://bun.sh/install.ps1 | iex
-  Refresh-Path
-  # the installer only writes the persisted PATH, so this session still needs it
-  if (Test-Path $bunExe) { $env:Path = "$env:USERPROFILE\.bun\bin;$env:Path" }
-  Report "Bun" (Test-Cmd "bun") "needed by claude-mem"
-}
-
 # --- VS Code ---
 if (Test-Cmd "code") {
   Report "VS Code" $true
@@ -98,57 +110,114 @@ if (Test-Cmd "code") {
 
 # --- VS Code extensions ---
 if (Test-Cmd "code") {
-  $exts = @(
-    "anthropic.claude-code",
-    "ms-azuretools.vscode-docker"
-  )
+  $exts = @("ms-azuretools.vscode-containers")
+  $names = @("Container Tools")
+  if ($wantClaude) { $exts += "anthropic.claude-code"; $names += "Claude Code" }
+  if ($wantCodex) { $exts += "openai.chatgpt"; $names += "Codex" }
+  $extOk = $true
   foreach ($e in $exts) {
     code --install-extension $e --force | Out-Null
+    if ($LASTEXITCODE -ne 0) { $extOk = $false }
   }
-  Report "VS Code extensions" $true "(Claude Code, Docker)"
+  Report "VS Code extensions" $extOk "($($names -join ', '))"
 } else {
   Report "VS Code extensions" $false "skipped — 'code' not found in this terminal"
 }
 
 # --- Claude Code CLI (native installer) ---
-if (Test-Cmd "claude") {
-  Report "Claude Code CLI" $true
-} else {
-  irm https://claude.ai/install.ps1 | iex
-  Refresh-Path
-  Report "Claude Code CLI" (Test-Cmd "claude") "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
+if ($wantClaude) {
+  if (Test-Cmd "claude") {
+    Report "Claude Code CLI" $true
+  } else {
+    irm https://claude.ai/install.ps1 | iex
+    Refresh-Path
+    # The installer may only print a "not in your PATH" hint — persist it so a new window finds claude.
+    $localBin = "$env:USERPROFILE\.local\bin"
+    if (-not (Test-Cmd "claude") -and (Test-Path "$localBin\claude.exe")) {
+      $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+      if (-not $userPath) { $userPath = "" }
+      if (($userPath -split ";") -notcontains $localBin) {
+        [System.Environment]::SetEnvironmentVariable("Path", (@($localBin, $userPath) -join ";").TrimEnd(";"), "User")
+      }
+      Refresh-Path
+    }
+    Report "Claude Code CLI" (Test-Cmd "claude") "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
+  }
+}
+
+# --- Codex CLI (native installer) ---
+if ($wantCodex) {
+  if (Test-Cmd "codex") {
+    Report "Codex CLI" $true
+  } else {
+    irm https://chatgpt.com/codex/install.ps1 | iex
+    Refresh-Path
+    Report "Codex CLI" (Test-Cmd "codex") "If still not found, close/reopen PowerShell and re-run this script (PATH not refreshed is the #1 cause)"
+  }
 }
 
 # --- devenv-doctor plugin (ships as part of this repo — no download needed) ---
 $marketplaceManifest = Join-Path $PSScriptRoot ".claude-plugin\marketplace.json"
-if (Test-Cmd "claude") {
-  if (Test-Path $marketplaceManifest) {
-    # 'marketplace add' is non-fatal on re-runs — it may already be registered.
-    claude plugin marketplace add $PSScriptRoot 2>&1 | Out-Null
-    claude plugin install devenv-doctor --scope $pluginScope 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-      Report "devenv-doctor plugin" $true "(scope: $pluginScope)"
+if (Test-Path $marketplaceManifest) {
+  if ($wantClaude) {
+    if (-not (Test-Cmd "claude")) {
+      Report "devenv-doctor (Claude Code)" $false "skipped — Claude Code CLI not found"
     } else {
-      Report "devenv-doctor plugin" $false "install failed — you probably need to run 'claude' and log in first, then re-run this script"
+      # Two steps rather than `install --marketplace`, which needs Claude Code 2.1.275+.
+      # 'marketplace add' is non-fatal on re-runs — it may already be registered.
+      claude plugin marketplace add $PSScriptRoot 2>&1 | Out-Null
+      claude plugin install devenv-doctor@ngernthongdee --scope $pluginScope 2>&1 | Out-Null
+      if ($LASTEXITCODE -eq 0) {
+        Report "devenv-doctor (Claude Code)" $true "(scope: $pluginScope)"
+      } else {
+        Report "devenv-doctor (Claude Code)" $false "install failed — run: claude plugin marketplace add `"$PSScriptRoot`"; claude plugin install devenv-doctor@ngernthongdee --scope $pluginScope"
+      }
     }
-  } else {
-    Report "devenv-doctor plugin" $false ".claude-plugin\marketplace.json not found next to this script — make sure you cloned/downloaded the full repo"
+  }
+  if ($wantCodex) {
+    # Codex reads this repo's .claude-plugin\marketplace.json as-is.
+    if (-not (Test-Cmd "codex")) {
+      Report "devenv-doctor (Codex)" $false "skipped — Codex CLI not found"
+    } else {
+      codex plugin marketplace add $PSScriptRoot 2>&1 | Out-Null
+      if ($LASTEXITCODE -eq 0) { codex plugin add devenv-doctor@ngernthongdee 2>&1 | Out-Null }
+      if ($LASTEXITCODE -eq 0) {
+        Report "devenv-doctor (Codex)" $true
+      } else {
+        Report "devenv-doctor (Codex)" $false "install failed — run: codex plugin marketplace add `"$PSScriptRoot`"; codex plugin add devenv-doctor@ngernthongdee"
+      }
+    }
   }
 } else {
-  Report "devenv-doctor plugin" $false "skipped — Claude Code CLI not found"
+  Report "devenv-doctor plugin" $false ".claude-plugin\marketplace.json not found next to this script — make sure you cloned/downloaded the full repo"
 }
 
-# --- Optional: mattpocock-skills (grilling, tdd, code-review), now on Anthropic's official marketplace ---
-if (Test-Cmd "claude") {
-  claude plugin marketplace add anthropics/claude-plugins-official 2>&1 | Out-Null
-  claude plugin install mattpocock-skills@claude-plugins-official --scope $pluginScope 2>&1 | Out-Null
-  if ($LASTEXITCODE -eq 0) {
-    Report "mattpocock-skills (optional)" $true "(scope: $pluginScope)"
+# --- Optional: mattpocock-skills (grilling, tdd, code-review) ---
+if ($wantClaude) {
+  if (-not (Test-Cmd "claude")) {
+    Report "mattpocock-skills (Claude Code, optional)" $false "skipped — Claude Code CLI not found"
   } else {
-    Report "mattpocock-skills (optional)" $false "install failed — log in first via 'claude', then re-run (command is 'claude plugin install', singular 'plugin')"
+    claude plugin marketplace add anthropics/claude-plugins-official 2>&1 | Out-Null
+    claude plugin install mattpocock-skills@claude-plugins-official --scope $pluginScope 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Report "mattpocock-skills (Claude Code, optional)" $true "(scope: $pluginScope)"
+    } else {
+      Report "mattpocock-skills (Claude Code, optional)" $false "install failed — run: claude plugin marketplace add anthropics/claude-plugins-official; claude plugin install mattpocock-skills@claude-plugins-official"
+    }
   }
-} else {
-  Report "mattpocock-skills (optional)" $false "skipped — Claude Code CLI not found"
+}
+if ($wantCodex) {
+  if (-not (Test-Cmd "codex")) {
+    Report "mattpocock-skills (Codex, optional)" $false "skipped — Codex CLI not found"
+  } else {
+    codex plugin marketplace add mattpocock/skills 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { codex plugin add mattpocock-skills@mattpocock 2>&1 | Out-Null }
+    if ($LASTEXITCODE -eq 0) {
+      Report "mattpocock-skills (Codex, optional)" $true
+    } else {
+      Report "mattpocock-skills (Codex, optional)" $false "install failed — run: codex plugin marketplace add mattpocock/skills; codex plugin add mattpocock-skills@mattpocock"
+    }
+  }
 }
 
 # --- WSL2 (required for Docker Desktop on Windows — check/install before Docker) ---
@@ -186,9 +255,13 @@ foreach ($r in $script:results) {
   Write-Host "$icon $($parts[1]) $($parts[2])"
 }
 
-Write-Host "`n=== 2 steps left that truly can't be automated ==="
-Write-Host "1) Open a new PowerShell window (important if anything was installed for the first time) and run: claude   -> opens your browser to log in with your Claude account"
-Write-Host "2) After logging in, run: npx claude-mem install   -> answer the prompts (pick Claude Code as the provider)"
-Write-Host "`nIf 'Bun' shows [!] above, fix that BEFORE step 2 — claude-mem installs fine without Bun and then silently does nothing, because its hooks and worker run on Bun. Install it with: irm https://bun.sh/install.ps1 | iex"
-Write-Host "`nIf 'devenv-doctor plugin' or 'mattpocock-skills' show [!] above, that's almost always because you weren't logged in yet on this run — log in, then re-run this script; it will skip what already succeeded."
-Write-Host "Once everything passes, open Claude Code and run: /devenv-doctor:environment-doctor   (if a session was already open during this script, run /reload-plugins first)"
+Write-Host "`n=== What's left that truly can't be automated ==="
+Write-Host "1) Open a new PowerShell window (important if anything was installed for the first time) and log in — it opens your browser:"
+if ($wantClaude) { Write-Host "     claude   -> sign in with your Claude account" }
+if ($wantCodex) { Write-Host "     codex    -> choose 'Sign in with ChatGPT'" }
+Write-Host "2) Optional, after logging in: npx claude-mem install   -> memory across sessions; it detects Claude Code and Codex and installs its own runtime (Bun, uv)."
+Write-Host "   The provider it pre-selects (CMEM Pro) becomes paid after a 30-day trial — pick another provider in the prompt if you don't want that."
+Write-Host "`nAnything marked [!] above prints the exact command to retry, or just re-run this script — it skips what already succeeded."
+Write-Host "Then check the whole setup from inside your agent:"
+if ($wantClaude) { Write-Host "  Claude Code: /devenv-doctor:environment-doctor   (if a session was already open during this script, run /reload-plugins first)" }
+if ($wantCodex) { Write-Host "  Codex:       `$environment-doctor  or just ask `"check my setup`"   (start a new codex session if one was already open)" }
