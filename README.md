@@ -40,6 +40,8 @@ cd ~ && curl -fsSL -o cc.zip https://github.com/killernay/cc-devenv-doctor/archi
 
 To paste in Terminal: press **⌘ Command + V**, then **Enter**.
 
+No need to install Git first — the command downloads a ZIP, and the script installs Git for you.
+
 ### Step 3 — Answer the questions
 
 - **"Which coding agent…"** — just press **Enter** (= install both Claude Code and Codex)
@@ -66,6 +68,8 @@ cd ~; Invoke-WebRequest https://github.com/killernay/cc-devenv-doctor/archive/re
 ```
 
 To paste in PowerShell: **right-click** inside the window (or press **Ctrl + V**), then **Enter**.
+
+No need to install Git first — the command downloads a ZIP, and the script installs Git for you.
 
 ### Step 3 — Answer the questions
 
