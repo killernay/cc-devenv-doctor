@@ -127,7 +127,9 @@ if (Test-Cmd "code") {
   if ($wantClaude) { $exts += "anthropic.claude-code"; $names += "Claude Code" }
   if ($wantCodex) { $exts += "openai.chatgpt"; $names += "Codex" }
   $extOk = $true
+  # Each install can take a minute with no output, so say what is happening.
   foreach ($e in $exts) {
+    Write-Host "  installing VS Code extension $e (can take a minute)..."
     code --install-extension $e --force | Out-Null
     if ($LASTEXITCODE -ne 0) { $extOk = $false }
   }
