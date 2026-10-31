@@ -22,8 +22,17 @@ function Report($step, $ok, $note = "", $failHint = "") {
   Write-Host "[$mark] $step $note"
 }
 
+# winget lives in WindowsApps, which is sometimes missing from PATH even when App Installer is installed.
+function Add-WindowsAppsPath {
+  $windowsApps = "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+  if ((Test-Path $windowsApps) -and (($env:Path -split ';') -notcontains $windowsApps)) {
+    $env:Path += ";$windowsApps"
+  }
+}
+
 function Refresh-Path {
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+  Add-WindowsAppsPath
 }
 
 Write-Host "=== cc-devenv-doctor - Windows setup ===`n"
@@ -75,6 +84,7 @@ if ($wantClaude) {
 }
 
 # --- winget ---
+Add-WindowsAppsPath
 if (-not (Test-Cmd "winget")) {
   Report "winget" $false "winget not found - update Windows or install 'App Installer' from the Microsoft Store, then re-run this script"
   Write-Host "`nStopping here - the next steps need winget"
